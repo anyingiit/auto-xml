@@ -2,8 +2,13 @@
 
 import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-const isDevelopment = process.env.NODE_ENV !== 'production'
+import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
+// import devtools from '@vue/devtools'
+const url = require("url");
+const path = require("path");
+const fs = require('fs')
+// const isDevelopment = process.env.NODE_ENV !== 'production'
+const isDevelopment = require('electron-is-dev')
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -56,17 +61,30 @@ app.on('activate', () => {
 app.on('ready', async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
-    try {
-      await installExtension(VUEJS_DEVTOOLS)
-    } catch (e) {
-      console.error('Vue Devtools failed to install:', e.toString())
-    }
+    // try {
+    //   await installExtension(VUEJS3_DEVTOOLS)
+    // } catch (e) {
+    //   console.error('Vue Devtools failed to install:', e.toString())
+    // }
+    installExtension(VUEJS3_DEVTOOLS)
+    .then((name) => {
+      console.log(`Added Extension:  ${name}`)
+      createWindow()
+    })
+    .catch((err) => console.log('An error occurred: ', err));
+    // devtools.connect("http://localhost", 8098)
   }
-  createWindow()
 })
+
+// app.whenReady().then(() => {
+//   installExtension(REDUX_DEVTOOLS)
+//       .then((name) => console.log(`Added Extension:  ${name}`))
+//       .catch((err) => console.log('An error occurred: ', err));
+// });
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
+  // devtools.connect("http://localhost", 8098)
   if (process.platform === 'win32') {
     process.on('message', (data) => {
       if (data === 'graceful-exit') {
@@ -89,4 +107,20 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 ipcMain.on('synchronous-message', (event, arg) => {
   console.log(arg) // prints "ping"
   event.returnValue = 'pong'
+})
+
+ipcMain.on('getXmlConfig', (event, arg) => {
+  // console.log("in")
+  let targetPath = path.join(__dirname, "../data/m.xml")
+  // console.log(targetPath)
+  fs.readFile(targetPath, "utf-8", (err, data)=>{
+    if(err){
+      // event.sender.send('asynchronous-reply', "读取失败");
+      console.log("读取失败")
+    }else{
+      // event.sender.send('asynchronous-reply', data);
+      console.log("读取成功:\n\t" + data.slice(0,20) + "...")
+      event.reply('getXmlConfig-replay', data)
+    }
+  })
 })
