@@ -5,10 +5,10 @@ module.exports = {
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
-      chainWebpackMainProcess: (config) => {
-      },
-      chainWebpackRendererProcess: (config) => {
-      }
+      // chainWebpackMainProcess: (config) => {
+      // },
+      // chainWebpackRendererProcess: (config) => {
+      // }
     }
   }
 }

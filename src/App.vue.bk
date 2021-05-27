@@ -1,0 +1,233 @@
+<template>
+  <!-- <img alt="Vue logo" src="./assets/logo.png">
+  <HelloWorld v-bind:msg="test"/>
+  <p>{{test}}</p> -->
+  <!-- <p>{{xmlConfigStr}}</p> -->
+  <div>
+    <el-button type="primary" v-on:click="mainButtonTetst">主要按钮</el-button>
+    <el-button type="primary" v-on:click="myButton">getAutoCustomVar</el-button>
+    <el-button type="primary" v-on:click="myButton2"
+      >setAutoCustomVar</el-button
+    >
+    <!-- <el-row :gutter="20">
+      <el-col :span="6"><el-input v-model="test" placeholder="请输入内容"></el-input></el-col>
+      <el-col :span="6"><el-input v-model="test" placeholder="请输入内容"></el-input></el-col>
+      <el-col :span="6"><el-input v-model="test" placeholder="请输入内容"></el-input></el-col>
+      <el-col :span="6"><el-input v-model="test" placeholder="请输入内容"></el-input></el-col>
+    </el-row> -->
+    <el-table
+      ref="multipleTable"
+      :data="tableData"
+      tooltip-effect="dark"
+      style="width: 100%"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column label="输入框" :data="tableData" show-overflow-tooltip>
+        <template #default="scope">
+          <el-input
+            v-model="scope.row.address"
+            placeholder="请输入内容"
+          ></el-input>
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
+</template>
+
+<script lang="ts">
+// import HelloWorld from './components/HelloWorld.vue'
+
+const { ipcRenderer } = require("electron");
+// console.log(ipcRenderer.sendSync('synchronous-message', 'ping')) // prints "pong"
+
+const { parseString } = require("xml2js");
+// const xml2js = require('xml2js')
+// console.log(parseString)
+
+export default {
+  name: "App",
+  components: {
+    // HelloWorld
+  },
+  data() {
+    return {
+      test: "abc123",
+      initReady: false,
+      xmlConfigStr: "",
+      xmlConfigObj: null,
+      tableData: [
+        {
+          date: "2016-05-02",
+          name: "王小虎",
+          address: "上海市普陀区金沙江路 1518 弄",
+        },
+      ],
+      targetDataName: [
+        "CR",
+        "LIVC",
+        "EGR",
+        "IVT",
+        "EVT",
+        "ST",
+        "RF",
+        "DSB",
+        "DJY",
+        "DJW",
+        "HInj",
+        "GPF",
+        "TWC",
+      ],
+      targetData: {
+        // "TWC": {
+        //   index: 5,
+        //   lowerbound: "12.0",
+        //   name: "TWC",
+        //   upperbound: "16.0",
+        //   value: "0.0",
+        // },
+      },
+      newXmlConfigObj: null
+    };
+  },
+  created() {
+    // let _this = this
+    // console.log(this)
+    ipcRenderer.on("getXmlConfig-replay", (event, arg) => {
+      this.xmlConfigStr = arg;
+      parseString(arg, (err, result) => {
+        if (err != null) {
+          console.log("xml解析失败!!")
+          //exit...
+        }
+        this.xmlConfigObj = result
+        this.initReady = true
+        //获得所有所需数据
+        
+        console.log(result)
+        // console.log(
+        //   this.xmlConfigObj.BATCH_MODE.DESIGNS_DB[0].VARIABLES[0].VARIABLE
+        // );
+        // let builder = new xml2js.Builder()
+        // let xml = builder.buildObject(result)
+        // console.log(xml)
+      });
+      // this.xmlConfigObj =
+    });
+  },
+  methods: {
+    mainButtonTetst() {
+      // console.log(event)
+      ipcRenderer.send("getXmlConfig", "get")
+      // this.test = "okok"
+      // var xml = "<root>Hello xml2js!</root>"
+    },
+    myButton() {
+      this.targetDataName.forEach((element, index) => {
+        // console.log(index, element)
+        console.log(index, getAutoCustomVar(this.xmlConfigObj, element));
+      });
+    },
+    myButton2() {
+      console.log(
+        "set TWC: " +
+          setAutoCustomVar(
+            this.xmlConfigObj,
+            "TWC",
+            "11111111",
+            "222222222",
+            "3333333333333"
+          )
+      );
+    },
+  },
+};
+function getAutoCustomVar(xmlConfigObj, target) {
+  console.log("getAutoCustomVar target: ", target);
+  let base = xmlConfigObj.BATCH_MODE.DESIGNS_DB[0].VARIABLES[0].VARIABLE;
+  for (let i = 0; i < base.length; i++) {
+    // console.log("element.$.name: ", base[i].$.name);
+    if (target === base[i].$.name.toString()) {
+      console.log("getAutoCustomVar finded: ", target);
+      return {
+        index: i,
+        name: base[i].$.name,
+        lowerbound: base[i].$.lowerbound,
+        value: base[i].$.value,
+        upperbound: base[i].$.upperbound,
+      };
+    }
+  }
+  // base.forEach((element, index) => {
+  //   console.log("element.$.name: ", element.$.name);
+  //   if (target === element.$.name.toString()) {
+  //     console.log("finded: ", target);
+  //     return {
+  //       index: index,
+  //       name: element.$.name,
+  //       lowerbound: element.$.lowerbound,
+  //       value: element.$.value,
+  //       upperbound: element.$.upperbound,
+  //     };
+  //   }
+  // });
+  return "shit";
+}
+function setAutoCustomVar(xmlConfigObj, target, lowerbound, value, upperbound) {
+  console.log("setAutoCustomVar target: ", target);
+  let base = xmlConfigObj.BATCH_MODE.DESIGNS_DB[0].VARIABLES[0].VARIABLE;
+  console.log("setAutoCustomVar base: ", base);
+  for (let i = 0; i < base.length; i++) {
+    console.log("element.$: ", base[i].$);
+    console.log(i, "element.$.name: ", base[i].$.name);
+    if (target === base[i].$.name.toString()) {
+      console.log("setAutoCustomVar finded: ", target);
+      console.log("ttt");
+      console.log("base[i] ", base[i]);
+      base[i].$.lowerbound = lowerbound;
+      base[i].$.value = value;
+      base[i].$.upperbound = upperbound;
+      return base;
+    }
+    // xmlConfigObj.BATCH_MODE.DESIGNS_DB[0].VARIABLES[0].VARIABLE = base;
+  }
+}
+</script>
+
+<style scoped lang="less">
+// .bg-purple {
+// }
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+.el-row {
+  margin-bottom: 20px;
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+.el-col {
+  border-radius: 4px;
+}
+.bg-purple-dark {
+  background: #99a9bf;
+}
+.bg-purple {
+  background: #d3dce6;
+}
+.bg-purple-light {
+  background: #e5e9f2;
+}
+.grid-content {
+  border-radius: 4px;
+  min-height: 36px;
+}
+.row-bg {
+  padding: 10px 0;
+  background-color: #f9fafc;
+}
+</style>
