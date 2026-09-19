@@ -13,6 +13,17 @@
 #   - the repository is locked with yarn.lock, not package-lock.json, so the
 #     build and test jobs use `yarn install --frozen-lockfile` rather than
 #     `npm ci`, which has nothing to read here.
+#   - yarn.lock resolved every package from Chinese npm mirrors
+#     (registry.npm.taobao.org, registry.nlark.com), which are retired and
+#     fail TLS with "certificate has expired"; the lockfile was regenerated
+#     against the real registry (registry.yarnpkg.com), pinning the same
+#     package versions. That surfaced a second, pre-existing problem: several
+#     transitive dependencies (e.g. node-releases) declare an `engines.node`
+#     range that excludes Node 16, which this project's own toolchain
+#     (vue-cli-service / webpack 4) still requires -- newer Node majors break
+#     that build with an OpenSSL 3 "digital envelope routines::unsupported"
+#     error. `--ignore-engines` keeps yarn from refusing an install those
+#     ranges call incompatible but that installs and builds fine.
 name: CI
 
 on:
@@ -70,7 +81,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-engines
 
       - name: Build
         run: yarn build
@@ -90,7 +101,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-engines
 
       - name: Build
         run: yarn build
